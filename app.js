@@ -43,6 +43,7 @@ const initialState = {
 
 let coneAngleDeg = Number(coneSlider.value);
 let dragging = null;
+let activeTouchId = null;
 const canvasAspectRatio = canvas.width / canvas.height;
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -374,43 +375,22 @@ function draw() {
   drawPlayer(keeper);
 }
 
-function getPointerPos(event) {
+function getCanvasPos(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
   const scaleY = canvas.height / rect.height;
 
   return {
-    x: (event.clientX - rect.left) * scaleX,
-    y: (event.clientY - rect.top) * scaleY,
+    x: (clientX - rect.left) * scaleX,
+    y: (clientY - rect.top) * scaleY,
   };
 }
 
-function pickPlayer(pos) {
-  const players = [attacker, keeper];
-  for (const player of players) {
-    if (Math.hypot(pos.x - player.x, pos.y - player.y) <= player.r + 5) {
-      return player;
-    }
-  }
-  return null;
-}
-
-canvas.addEventListener("pointerdown", (event) => {
-  const pos = getPointerPos(event);
-  dragging = pickPlayer(pos);
+function updateDraggedPlayer(pos) {
   if (!dragging) return;
 
-  event.preventDefault();
-  canvas.classList.add("dragging");
-  canvas.setPointerCapture(event.pointerId);
-});
-
-canvas.addEventListener("pointermove", (event) => {
-  if (!dragging) return;
-
-  event.preventDefault();
-  const pos = getPointerPos(event);
   dragging.x = clamp(pos.x, 40 + dragging.r, canvas.width - 40 - dragging.r);
+
   if (dragging === keeper) {
     keeper.y = clamp(
       pos.y,
@@ -433,22 +413,91 @@ canvas.addEventListener("pointermove", (event) => {
   }
 
   draw();
-});
-
-function endDrag(event) {
-  if (!dragging) return;
-  canvas.classList.remove("dragging");
-  if (canvas.hasPointerCapture(event.pointerId)) {
-    canvas.releasePointerCapture(event.pointerId);
-  }
-  dragging = null;
 }
 
-canvas.addEventListener("pointerup", endDrag);
-canvas.addEventListener("pointercancel", endDrag);
-canvas.addEventListener("lostpointercapture", () => {
-  dragging = null;
+function pickPlayer(pos) {
+  const players = [attacker, keeper];
+  for (const player of players) {
+    if (Math.hypot(pos.x - player.x, pos.y - player.y) <= player.r + 5) {
+      return player;
+    }
+  }
+  return null;
+}
+
+canvas.addEventListener("mousedown", (event) => {
+  const pos = getCanvasPos(event.clientX, event.clientY);
+  dragging = pickPlayer(pos);
+  if (!dragging) return;
+
+  event.preventDefault();
+  canvas.classList.add("dragging");
+});
+
+window.addEventListener("mousemove", (event) => {
+  if (!dragging) return;
+
+  const pos = getCanvasPos(event.clientX, event.clientY);
+  updateDraggedPlayer(pos);
+});
+
+function endDrag() {
+  if (!dragging) return;
   canvas.classList.remove("dragging");
+  dragging = null;
+  activeTouchId = null;
+}
+
+window.addEventListener("mouseup", endDrag);
+
+canvas.addEventListener(
+  "touchstart",
+  (event) => {
+    if (activeTouchId !== null) return;
+
+    const touch = event.changedTouches[0];
+    const pos = getCanvasPos(touch.clientX, touch.clientY);
+    dragging = pickPlayer(pos);
+    if (!dragging) return;
+
+    activeTouchId = touch.identifier;
+    canvas.classList.add("dragging");
+    event.preventDefault();
+  },
+  { passive: false },
+);
+
+canvas.addEventListener(
+  "touchmove",
+  (event) => {
+    if (activeTouchId === null || !dragging) return;
+
+    const touch = Array.from(event.changedTouches).find(
+      (t) => t.identifier === activeTouchId,
+    );
+    if (!touch) return;
+
+    const pos = getCanvasPos(touch.clientX, touch.clientY);
+    updateDraggedPlayer(pos);
+    event.preventDefault();
+  },
+  { passive: false },
+);
+
+canvas.addEventListener("touchend", (event) => {
+  if (activeTouchId === null) return;
+  const finished = Array.from(event.changedTouches).some(
+    (t) => t.identifier === activeTouchId,
+  );
+  if (finished) endDrag();
+});
+
+canvas.addEventListener("touchcancel", (event) => {
+  if (activeTouchId === null) return;
+  const cancelled = Array.from(event.changedTouches).some(
+    (t) => t.identifier === activeTouchId,
+  );
+  if (cancelled) endDrag();
 });
 
 coneSlider.addEventListener("input", () => {

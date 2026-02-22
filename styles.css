@@ -74,7 +74,7 @@ h1 {
   border: 1px solid #b3c5dc;
   background: #72ba6a;
   cursor: default;
-  touch-action: auto;
+  touch-action: pan-y;
 }
 
 #pitch.dragging {
