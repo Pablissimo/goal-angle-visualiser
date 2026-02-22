@@ -22,13 +22,9 @@ body {
 }
 
 .app {
-  width: min(1040px, 95vw);
-  margin: 1rem auto 2rem;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 1rem 1.2rem 1.4rem;
-  box-shadow: 0 8px 24px rgba(10, 29, 66, 0.08);
+  width: 100%;
+  margin: 0;
+  padding: 0.4rem;
 }
 
 h1 {
@@ -45,7 +41,8 @@ h1 {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.8rem;
-  margin-bottom: 0.8rem;
+  margin-top: 0.6rem;
+  margin-bottom: 0.4rem;
 }
 
 .controls input[type="range"] {
@@ -68,13 +65,16 @@ h1 {
 }
 
 #pitch {
-  width: 100%;
+  display: block;
+  width: auto;
+  max-width: 100%;
   height: auto;
+  margin: 0 auto;
   border-radius: 12px;
   border: 1px solid #b3c5dc;
   background: #72ba6a;
   cursor: default;
-  touch-action: none;
+  touch-action: auto;
 }
 
 #pitch.dragging {

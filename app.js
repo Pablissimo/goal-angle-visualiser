@@ -1,5 +1,6 @@
 const canvas = document.getElementById("pitch");
 const ctx = canvas.getContext("2d");
+const app = document.querySelector(".app");
 
 const coneSlider = document.getElementById("coneAngle");
 const coneAngleValue = document.getElementById("coneAngleValue");
@@ -42,8 +43,62 @@ const initialState = {
 
 let coneAngleDeg = Number(coneSlider.value);
 let dragging = null;
+const canvasAspectRatio = canvas.width / canvas.height;
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+function getOuterHeight(el) {
+  const styles = window.getComputedStyle(el);
+  return (
+    el.getBoundingClientRect().height +
+    parseFloat(styles.marginTop) +
+    parseFloat(styles.marginBottom)
+  );
+}
+
+function resizeCanvasToFitViewport() {
+  const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+  const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+
+  const appStyles = window.getComputedStyle(app);
+  const appPaddingX =
+    parseFloat(appStyles.paddingLeft) + parseFloat(appStyles.paddingRight);
+  const appPaddingY =
+    parseFloat(appStyles.paddingTop) + parseFloat(appStyles.paddingBottom);
+
+  let nonCanvasHeight = 0;
+  for (const child of app.children) {
+    if (child === canvas) continue;
+    nonCanvasHeight += getOuterHeight(child);
+  }
+
+  const safeGap = 8;
+  const maxWidth = Math.max(220, viewportWidth - appPaddingX - safeGap);
+  const maxHeight = Math.max(
+    160,
+    viewportHeight - appPaddingY - nonCanvasHeight - safeGap,
+  );
+
+  let displayWidth = maxWidth;
+  let displayHeight = displayWidth / canvasAspectRatio;
+
+  const isLandscape = viewportWidth > viewportHeight;
+  const isCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
+
+  if (isLandscape && isCoarsePointer) {
+    canvas.style.width = `${Math.floor(displayWidth)}px`;
+    canvas.style.height = `${Math.floor(displayHeight)}px`;
+    return;
+  }
+
+  if (displayHeight > maxHeight) {
+    displayHeight = maxHeight;
+    displayWidth = displayHeight * canvasAspectRatio;
+  }
+
+  canvas.style.width = `${Math.floor(displayWidth)}px`;
+  canvas.style.height = `${Math.floor(displayHeight)}px`;
+}
 
 function normalizeAngle(angle) {
   let a = angle;
@@ -417,4 +472,11 @@ resetScenarioButton.addEventListener("click", () => {
   draw();
 });
 
+window.addEventListener("resize", resizeCanvasToFitViewport);
+window.addEventListener("orientationchange", resizeCanvasToFitViewport);
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", resizeCanvasToFitViewport);
+}
+
+resizeCanvasToFitViewport();
 draw();
