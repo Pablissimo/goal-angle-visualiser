@@ -345,6 +345,7 @@ canvas.addEventListener("pointerdown", (event) => {
   dragging = pickPlayer(pos);
   if (!dragging) return;
 
+  event.preventDefault();
   canvas.classList.add("dragging");
   canvas.setPointerCapture(event.pointerId);
 });
@@ -352,6 +353,7 @@ canvas.addEventListener("pointerdown", (event) => {
 canvas.addEventListener("pointermove", (event) => {
   if (!dragging) return;
 
+  event.preventDefault();
   const pos = getPointerPos(event);
   dragging.x = clamp(pos.x, 40 + dragging.r, canvas.width - 40 - dragging.r);
   if (dragging === keeper) {
@@ -381,12 +383,18 @@ canvas.addEventListener("pointermove", (event) => {
 function endDrag(event) {
   if (!dragging) return;
   canvas.classList.remove("dragging");
-  canvas.releasePointerCapture(event.pointerId);
+  if (canvas.hasPointerCapture(event.pointerId)) {
+    canvas.releasePointerCapture(event.pointerId);
+  }
   dragging = null;
 }
 
 canvas.addEventListener("pointerup", endDrag);
 canvas.addEventListener("pointercancel", endDrag);
+canvas.addEventListener("lostpointercapture", () => {
+  dragging = null;
+  canvas.classList.remove("dragging");
+});
 
 coneSlider.addEventListener("input", () => {
   coneAngleDeg = Number(coneSlider.value);
