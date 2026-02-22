@@ -355,7 +355,11 @@ canvas.addEventListener("pointermove", (event) => {
   const pos = getPointerPos(event);
   dragging.x = clamp(pos.x, 40 + dragging.r, canvas.width - 40 - dragging.r);
   if (dragging === keeper) {
-    keeper.y = clamp(pos.y, goal.lineY + keeper.r + 1, attacker.y - 15);
+    keeper.y = clamp(
+      pos.y,
+      goal.lineY + keeper.r + 1,
+      canvas.height - 35 - keeper.r,
+    );
   }
 
   if (dragging === attacker) {
