@@ -62,6 +62,43 @@ function rayToGoalX(origin, angle) {
   return origin.x + t * Math.cos(angle);
 }
 
+function getAngularIntervalOnGoalLine(
+  origin,
+  centerAngle,
+  halfAngle,
+  minX,
+  maxX,
+) {
+  if (maxX <= minX) return null;
+
+  const isInside = (x) => {
+    const angleToPoint = Math.atan2(goal.lineY - origin.y, x - origin.x);
+    const diff = normalizeAngle(angleToPoint - centerAngle);
+    return Math.abs(diff) <= halfAngle + 1e-9;
+  };
+
+  const candidates = [];
+
+  const boundaryA = centerAngle - halfAngle;
+  const boundaryB = centerAngle + halfAngle;
+  const xA = rayToGoalX(origin, boundaryA);
+  const xB = rayToGoalX(origin, boundaryB);
+
+  if (xA !== null) candidates.push(xA);
+  if (xB !== null) candidates.push(xB);
+
+  if (isInside(minX)) candidates.push(minX);
+  if (isInside(maxX)) candidates.push(maxX);
+
+  if (candidates.length === 0) return null;
+
+  const left = clamp(Math.min(...candidates), minX, maxX);
+  const right = clamp(Math.max(...candidates), minX, maxX);
+
+  if (right <= left) return null;
+  return { left, right };
+}
+
 function getConeData() {
   const half = (coneAngleDeg * Math.PI) / 360;
   const centerAngle = Math.atan2(
@@ -70,31 +107,13 @@ function getConeData() {
   );
   const leftAngle = centerAngle - half;
   const rightAngle = centerAngle + half;
-
-  const x1 = rayToGoalX(attacker, leftAngle);
-  const x2 = rayToGoalX(attacker, rightAngle);
-
-  if (x1 === null || x2 === null) {
-    return {
-      centerAngle,
-      leftAngle,
-      rightAngle,
-      goalInterval: null,
-    };
-  }
-
-  const lo = Math.min(x1, x2);
-  const hi = Math.max(x1, x2);
-
-  const interval = {
-    left: clamp(lo, goal.left, goal.right),
-    right: clamp(hi, goal.left, goal.right),
-  };
-
-  if (interval.right <= interval.left) {
-    interval.left = 0;
-    interval.right = 0;
-  }
+  const interval = getAngularIntervalOnGoalLine(
+    attacker,
+    centerAngle,
+    half,
+    goal.left,
+    goal.right,
+  );
 
   return {
     centerAngle,
@@ -132,33 +151,19 @@ function getKeeperShadowInterval(coneData, extraReach = 0) {
   }
 
   const delta = Math.asin(Math.min(1, effectiveRadius / d));
-  const tangentA = keeperDir - delta;
-  const tangentB = keeperDir + delta;
+  const keeperWindow = getAngularIntervalOnGoalLine(
+    attacker,
+    keeperDir,
+    delta,
+    goal.left,
+    goal.right,
+  );
 
-  const ta = normalizeAngle(tangentA - coneData.centerAngle);
-  const tb = normalizeAngle(tangentB - coneData.centerAngle);
-
-  const ordered =
-    ta < tb
-      ? [coneData.centerAngle + ta, coneData.centerAngle + tb]
-      : [coneData.centerAngle + tb, coneData.centerAngle + ta];
-
-  const x1 = rayToGoalX(attacker, ordered[0]);
-  const x2 = rayToGoalX(attacker, ordered[1]);
-
-  if (x1 === null || x2 === null) return null;
+  if (!keeperWindow) return null;
 
   const shadow = {
-    left: clamp(
-      Math.min(x1, x2),
-      coneData.goalInterval.left,
-      coneData.goalInterval.right,
-    ),
-    right: clamp(
-      Math.max(x1, x2),
-      coneData.goalInterval.left,
-      coneData.goalInterval.right,
-    ),
+    left: Math.max(keeperWindow.left, coneData.goalInterval.left),
+    right: Math.min(keeperWindow.right, coneData.goalInterval.right),
   };
 
   if (shadow.right <= shadow.left) return null;
