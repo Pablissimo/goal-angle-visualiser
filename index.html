@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Goal Position Visualiser</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <h1>Goalkeeper Position Visualiser</h1>
+      <p class="intro">
+        Drag the attacker and goalkeeper. The red area shows the goalkeeper's
+        shadow in the shooting cone.
+      </p>
+
+      <section class="controls">
+        <label for="coneAngle"
+          >Shot cone angle: <span id="coneAngleValue">60°</span></label
+        >
+        <input
+          id="coneAngle"
+          type="range"
+          min="30"
+          max="150"
+          step="1"
+          value="60"
+        />
+        <button id="resetScenario" type="button">Reset scenario</button>
+      </section>
+
+      <canvas
+        id="pitch"
+        width="980"
+        height="620"
+        aria-label="Football goal positioning visualiser"
+      ></canvas>
+
+      <section class="legend">
+        <div><span class="swatch cone"></span>Possible shot cone</div>
+        <div><span class="swatch shadowReach"></span>Keeper can reach</div>
+        <div><span class="swatch shadow"></span>Keeper standing cover</div>
+        <div><span class="swatch open"></span>Visible goal area</div>
+        <div><span class="swatch blocked"></span>Blocked goal area</div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
